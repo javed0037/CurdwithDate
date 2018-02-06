@@ -41,7 +41,7 @@ app.post('/UploadEmployeeImageById',(req,res) => {
       	          filename: function(req, file, callback) {
       		          console.log(file)
       		          callback(null, file.fieldname + '-' + Date.now() + path.extname(file.originalname))
-      	         }
+      	          }
               })
 
               var upload = multer({
