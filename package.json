@@ -1,0 +1,22 @@
+{
+  "name": "employeedemo",
+  "version": "1.0.0",
+  "description": "",
+  "main": "index.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "author": "javed",
+  "license": "ISC",
+  "dependencies": {
+    "bcrypt": "^1.0.3",
+    "body-parser": "^1.18.2",
+    "ejs": "^2.5.7",
+    "express": "^4.16.2",
+    "express-api-queryhandler": "^0.4.3",
+    "form-data": "^2.3.1",
+    "mongoose": "^5.0.3",
+    "multer": "^1.3.0",
+    "path": "^0.12.7"
+  }
+}
