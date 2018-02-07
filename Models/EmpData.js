@@ -14,12 +14,20 @@ EmpData = {
       Password : {
         type : String
       },
+      Email : {
+        type : String ,
+        unique : true
+      },
       ImageUpload : {
         type : String
       },
+      IsEmailVerified : {
+          type : Boolean,
+          default :false
+      },
     isDeleted : {
           type : Boolean,
-          Default : false
+          default : false
     }
 };
 module.exports = mongoose.model('employeedata',EmpData);
