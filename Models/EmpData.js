@@ -13,7 +13,11 @@ EmpData = {
       },
       Password : {
         type : String
+
       },
+      //ConfirmPassword : {
+        //type : String
+      //},
       Email : {
         type : String ,
         unique : true

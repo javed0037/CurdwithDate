@@ -19,10 +19,151 @@ app.use(bodyParser.urlencoded({
 app.use(bodyParser.json());
 const EmpData = require('./Models/EmpData');
 mongoose.connect('mongodb://localhost/EmployeeData');
+app.post('/Login', (req, res) => {
+    let emailObje = {
+        Email: req.body.Email
+    }
+    EmpData.findOne(emailObje, (err, record) => {
+        if (err) {
+            res.json({
+                message: "enter valid email"
+            })
+        }
+        if (record) {
+            bcrypt.compare(req.body.Password, record.Password, (err, data) => {
+                if (err) {
+                    res.json({
+                        message: " error due to wrong password",
+                        Status: 400
+                    })
+                }
+                if (data) {
+                    res.json({
+                        message: "you are login sucessfully",
+                        data: data,
+                        Status: 200
+                    })
+                } else {
+                    res.json({
+                        message: "please enter the correct password "
+                    })
+                }
+
+            })
+        } else {
+            res.json({
+                message: "please enter the correct email and  password"
+            })
+        }
+    })
+});
+app.post('/ResetPassword', (req, res) => {
+  let PassObj1 = {
+      Email: req.body.Email
+  }
+  EmpData.findOne(PassObj1, (err, record) => {
+if(err){
+  res.json({message : "enter email"})
+       }
+      if(record){
+        if(PassObj1.Email == record.Email) {
+         bcrypt.hash(req.body.Password, 9, (err, hash) => {
+            if(err) {
+                res.json({
+                    message: "Wrong Password and confirm password",
+                    Status: 400
+                })
+            }
+            if (hash) {
+                let PassObj2 = {
+                    Password: hash,
+                    ConfirmPassword: req.body.ConfirmPassword
+                }
+                if (req.body.Password == PassObj2.ConfirmPassword) {
+                    EmpData.update(PassObj1, PassObj2, (err, data) => {
+                        if (err) {
+                            res.json({
+                                message: "Wrong Password and confirm password",
+                                Status: 400
+                            })
+                        }
+                        if (data) {
+                            res.json({
+                                message: "password reset sucessfully",
+                                data: data,
+                                Status: 200
+                            })
+                        }
+                    })
+                } else {
+                    res.json({
+                        message: "Password and confirm Password not matched"
+                    })
+                }
+            }
+        })
+
+        }
+        else {
+           res.json({
+               message: "email is not correct"
+           })
+       }
+      }
+      else {
+         res.json({
+             message: "email is not correct"
+         })
+     }
+    })
+    }),
+    app.post('/forgetPassword', function(req, res) {
+        let EmailObj2 = {
+            Email: req.body.Email
+        }
+        EmpData.findOne(EmailObj2, (err, data) => {
+            if (err) {
+                res.json({
+                    message: "please enter the valid email id",
+                    status: 400
+                })
+            }
+            if (data) {
+                res.json({
+                    message: "link send sucessfully on your mail are plz check",
+                    Status: 200
+                })
+                var transporter = nodemailer.createTransport({
+                    service: 'gmail',
+                    auth: {
+                        user: 'javedkhan199501@gmail.com',
+                        pass: 'arshwrarshi'
+                    }
+                });
+                var mailOptions = {
+                    from: 'javedkhan199501@gmail.com',
+                    to: 'javedkhan19950@gmail.com',
+                    subject: 'Sending Email using Node.js',
+                    text: 'this is the link for reset the password'
+                };
+                transporter.sendMail(mailOptions, function(error, info) {
+                    if (error) {
+                        console.log(error);
+                    } else {
+                        console.log('Email sent: ' + info.response);
+                    }
+                })
+            } else {
+                res.json({
+                    message: "plz enter valid email"
+                })
+            }
+        })
+    });
 app.post('/UpatedEmployeeBYEmail', (req, res) => {
         let empObj = {
             Email: req.body.Email
-        };
+        }
         EmpObj1 = {
             Name: req.body.Name,
             Address: req.body.Address,
@@ -31,30 +172,33 @@ app.post('/UpatedEmployeeBYEmail', (req, res) => {
         };
         EmpData.update(empObj, EmpObj1, function(err, data) {
             if (err) {
-                res.json(err)
+                res.json({
+                    message: "please enter the valid email id",
+                    status: 400
+                })
             }
             if (data) {
-                res.json(data)
+                res.json({
+                    message: "you have updated data sucessfully",
+                    data: data,
+                    satatus: 200
+
+                })
             }
         })
-
     }),
-
-    app.put('/EmailVerified', (req, res) => {
-        let usees = {
+    app.post('/EmailVerified', (req, res) => {
+        let EmObj = {
             Email: req.body.Email
-        };
-        if (usees.Email) {
-            EmpData.update({
-                usees
-            }, {
-                IsEmailVerified: (0 == 0)
+        }
+        if (EmObj.Email) {
+            EmpData.update(EmObj, {
+                IsEmailVerified: false
             }, (err, data) => {
                 if (err) {
                     return res.json({
                         status: 400,
                         message: 'Email id not Correct'
-
                     })
                 }
                 if (data) {
@@ -89,8 +233,8 @@ app.post('/UpatedEmployeeBYEmail', (req, res) => {
             res.end('File is uploaded')
         })
         EmpData.find(userFile, (req, res))
-    })
-app.post('/GetEmployeeByDate', (req, res) => {
+    }),
+    app.post('/GetEmployeeByDate', (req, res) => {
         var uses = {
             DateOfJoing: req.body.DateOfJoing
         };
@@ -133,13 +277,13 @@ app.post('/GetEmployeeByDate', (req, res) => {
                 })
         });
     });
-app.post('/CreateEmployee', (req, res) => {
+app.post('/CreateNewEmployee', (req, res) => {
     console.log('CreateEmployee');
     bcrypt.hash(req.body.Password, 9, (err, hash) => {
         if (err) {
             res.json({
                 status: 400,
-                message: "password not bcrypt"
+                message: "password unable to bcrypt"
             })
         }
         let user = {
@@ -162,7 +306,7 @@ app.post('/CreateEmployee', (req, res) => {
                 if (record) {
                     res.json({
                         Status: 200,
-                        messsage: " Created api sucessfully",
+                        messsage: " Employee Register sucessfully",
                         data: record
                     })
                 } else {
@@ -530,7 +674,6 @@ app.post('/CreateEmployee', (req, res) => {
             </tr>
           </table>
         </td>
-
       </tr>
     </table>
   </center>
@@ -549,9 +692,10 @@ app.post('/CreateEmployee', (req, res) => {
             })
         } else {
             console.log(Constants.RequiredField);
+          res.json({ message : "please enter the require field" })
         }
     })
-})
+});
 app.listen(3000, (req, res) => {
     console.log("app is running on port 3000");
 });
