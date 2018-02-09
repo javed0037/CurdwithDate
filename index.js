@@ -1,7 +1,9 @@
 var mongoose = require('mongoose');
 var express = require('express');
 var bcrypt = require('bcrypt');
+var jwt = require('jsonwebtoken');
 var nodemailer = require('nodemailer');
+var twilio = require('twilio');
 var path = require('path');
 var multer = require('multer');
 var queryHandler = require('express-api-queryhandler');
@@ -17,13 +19,57 @@ app.use(bodyParser.urlencoded({
     extended: false
 }));
 app.use(bodyParser.json());
-const EmpData = require('./Models/EmpData');
-mongoose.connect('mongodb://localhost/EmployeeData');
+const EmployeeDB = require('./Models/EmployeeDB');
+mongoose.connect('mongodb://localhost/EmployeeDB');
+
+//For message sending on Mobile
+app.post('/OtpToMobile',(req,res)=>{
+     let MobObj ={
+           PhoneNumber : req.body.PhoneNumber,
+           Email : req.body.Email
+       }
+    EmployeeDB.findOne( { Email : MobObj.Email }, {}, function(err, user){
+      if(user){
+           let OTP = Math.floor((Math.random() * 100000) + 1);
+           const accountSid = 'AC26b80d4aaacc7a0c2a40319852e5663d';
+           const authToken  = '70b8210cf5034211e1806ad2744932e1';
+          // require the Twilio module and create a REST client
+
+           const client = require('twilio')(accountSid, authToken);
+           client.messages.create(
+             {
+               to: '+91'+MobObj.PhoneNumber,
+               from: '+12568297885',
+               body: 'Hi YOur OTP is'+ OTP
+             },
+      (err, message) => {
+                   if(err) res.json({ message : "unable to  send", error : err})
+
+             if(message){
+               bcrypt.hash(OTP,9, (err, hash) => {
+                  if(err){res.json({message :" please send otp"})}
+                   if(hash){
+
+                EmployeeDB.update({ Email : MobObj.Email}, {"$set": { "OtpMobile" : hash }}, function(err, updateuser){
+                  if(updateuser){
+                    res.json({status : 200,message : "Otp send sucessfully on your mobile number"})
+                  }
+                })
+            }else{
+              res.json({message : "enter valid number"})
+            }
+        });
+      }
+    });
+    }
+  })
+});
+
 app.post('/Login', (req, res) => {
     let emailObje = {
         Email: req.body.Email
     }
-    EmpData.findOne(emailObje, (err, record) => {
+    EmployeeDB.findOne(emailObje, (err, record) => {
         if (err) {
             res.json({
                 message: "enter valid email"
@@ -38,17 +84,21 @@ app.post('/Login', (req, res) => {
                     })
                 }
                 if (data) {
-                    res.json({
-                        message: "you are login sucessfully",
-                        data: data,
-                        Status: 200
-                    })
-                } else {
-                    res.json({
-                        message: "please enter the correct password "
-                    })
+                  var token = jwt.sign({id:EmployeeDB._id},"name",{expiresIn:86400});
+                  return res.json({auth : true,
+                  token : token })
                 }
-
+                    // res.json({
+                    //     message: "you are login sucessfully",
+                    //     data: data,
+                    //     Status: 200
+                    // })
+                    //   } else {
+                     else {
+                      res.json({
+                        message: "please enter the correct password "
+                      })
+                    }
             })
         } else {
             res.json({
@@ -57,11 +107,19 @@ app.post('/Login', (req, res) => {
         }
     })
 });
+app.get('/userid', function(req, res) {
+    var token = req.headers['token'];
+    jwt.verify(token, "name", function(err, decoded) {
+      if (err) return res.json(err);
+      return res.json(decoded);
+    });
+});
 app.post('/ResetPassword', (req, res) => {
+
   let PassObj1 = {
       Email: req.body.Email
   }
-  EmpData.findOne(PassObj1, (err, record) => {
+  EmployeeDB.findOne(PassObj1, (err, record) => {
 if(err){
   res.json({message : "enter email"})
        }
@@ -80,7 +138,7 @@ if(err){
                     ConfirmPassword: req.body.ConfirmPassword
                 }
                 if (req.body.Password == PassObj2.ConfirmPassword) {
-                    EmpData.update(PassObj1, PassObj2, (err, data) => {
+                    EmployeeDB.update(PassObj1, PassObj2, (err, data) => {
                         if (err) {
                             res.json({
                                 message: "Wrong Password and confirm password",
@@ -117,11 +175,11 @@ if(err){
      }
     })
     }),
-    app.post('/forgetPassword', function(req, res) {
+app.post('/forgetPassword', function(req, res) {
         let EmailObj2 = {
             Email: req.body.Email
         }
-        EmpData.findOne(EmailObj2, (err, data) => {
+        EmployeeDB.findOne(EmailObj2, (err, data) => {
             if (err) {
                 res.json({
                     message: "please enter the valid email id",
@@ -170,7 +228,7 @@ app.post('/UpatedEmployeeBYEmail', (req, res) => {
             DateOfJoing: req.body.DateOfJoing,
             Password: req.body.password
         };
-        EmpData.update(empObj, EmpObj1, function(err, data) {
+        EmployeeDB.update(empObj, EmpObj1, function(err, data) {
             if (err) {
                 res.json({
                     message: "please enter the valid email id",
@@ -192,7 +250,7 @@ app.post('/UpatedEmployeeBYEmail', (req, res) => {
             Email: req.body.Email
         }
         if (EmObj.Email) {
-            EmpData.update(EmObj, {
+            EmployeeDB.update(EmObj, {
                 IsEmailVerified: false
             }, (err, data) => {
                 if (err) {
@@ -232,13 +290,13 @@ app.post('/UpatedEmployeeBYEmail', (req, res) => {
         upload(req, res, function(err) {
             res.end('File is uploaded')
         })
-        EmpData.find(userFile, (req, res))
+        EmployeeDB.find(userFile, (req, res))
     }),
     app.post('/GetEmployeeByDate', (req, res) => {
         var uses = {
             DateOfJoing: req.body.DateOfJoing
         };
-        EmpData.find(uses, (err, rcd) => {
+        EmployeeDB.find(uses, (err, rcd) => {
             if (err) {
                 res.json({
                     Status: 400,
@@ -262,7 +320,7 @@ app.post('/UpatedEmployeeBYEmail', (req, res) => {
         });
     }),
     app.get('/GetEmployee', (req, res) => {
-        EmpData.find().sort({
+        EmployeeDB.find().sort({
             Name: 1
         }).exec(function(err, data) {
             if (err) {
@@ -277,6 +335,23 @@ app.post('/UpatedEmployeeBYEmail', (req, res) => {
                 })
         });
     });
+    app.get('/getAllUser',(req,res) => {
+      EmployeeDB.find({},(err,result) => {
+    if(err) {
+      res.json({
+        meassage : "please enter the valid eamil"
+      })
+    }
+    if(result){
+      res.json({
+        meassage : "all data receive sucessfully ",
+        result : result
+      })
+    }
+
+      })
+    });
+
 app.post('/CreateNewEmployee', (req, res) => {
     console.log('CreateEmployee');
     bcrypt.hash(req.body.Password, 9, (err, hash) => {
@@ -296,7 +371,7 @@ app.post('/CreateNewEmployee', (req, res) => {
 
         if (user.Name && user.Address && user.DateOfJoing && user.Password && user.Email) {
             console.log('CreateEmployee111111');
-            EmpData.create(user, (err, record) => {
+            EmployeeDB.create(user, (err, record) => {
                 if (err) {
                     res.json({
                         status: 400,
