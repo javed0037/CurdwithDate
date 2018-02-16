@@ -27,7 +27,7 @@ const Student = require('./Models/Student');
 mongoose.connect('mongodb://localhost/Student');
 
 app.use('/user', USERS);
-app.use('/stud',STUD);
+app.use('/student',STUD);
 //For message sending on Mobile
 
 

@@ -6,4 +6,5 @@ router.get('/getStudent',function(req,res){
 })
 
 router.post('/RegisterNewStudet', stud.RegisterNewStudet);
+router.post('/GetTotalMarkByID', stud.GetTotalMarkByID);
 module.exports = router;

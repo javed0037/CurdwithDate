@@ -1,37 +1,51 @@
 var mongoose = require('mongoose');
 var Schema = mongoose.Schema;
-var StudentSchema = new Schema ({
-     Name : {
-         type : String
-          },
-     RollNumber : {
-         type : String
+var StudentSchema = new Schema({
+    Name: {
+        type: String
+    },
+    Email: {
+      type : String,
+      require : true
+    },
+    RollNumber: {
+        type: String
+    },
+
+    Address: {
+        type: String
+    },
+
+    Result: [{
+        SubjectName: {
+            type: String
         },
 
-     Address : {
-         type : String
-       },
+        Mark: {
+            type: Number
+        }
+    }],
 
-     TotalMark : [{
-         SubjectName : {
-          type : String
-          },
+    City: {
+        type: String
+    },
 
-         Mark : {
-           type : Number
-          }
-     }],
+    DOB: {
+        type: Date
+    },
+    RegistrationDate: {
+        type: Date
+    },
+    Scholarship : [{
+      CentralGovt : {
+        type : Number
+      },
+      StateGovt : {
+        type : Number
+      }
+    }]
 
-       City : {
-         type : String
-       },
 
-       DOB : {
-          type : Date
-       },
-       RegistrationDate : {
-              type : Date
-          }
 
 
 })
